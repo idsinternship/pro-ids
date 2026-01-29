@@ -1,44 +1,70 @@
-import { createContext, useContext, useState } from "react";
-import type { ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { apiRequest } from "../api/http";
 
-export type Role = "student" | "instructor";
+type Role = "student" | "instructor" | "admin";
+
+export type User = {
+  id: number;
+  name: string;
+  email: string;
+  role: Role;
+};
 
 type AuthContextType = {
-  isAuthenticated: boolean;
+  user: User | null;
   role: Role | null;
-  loginAsStudent: () => void;
-  loginAsInstructor: () => void;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 };
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [role, setRole] = useState<Role | null>(null);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const role = user?.role ?? null;
+  const isAuthenticated = !!user;
 
-  const loginAsStudent = () => {
-    setIsAuthenticated(true);
-    setRole("student");
-  };
+  // 🔁 restore session on refresh
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-  const loginAsInstructor = () => {
-    setIsAuthenticated(true);
-    setRole("instructor");
-  };
+    apiRequest("/me")
+      .then((u) => setUser(u))
+      .catch(() => {
+        localStorage.removeItem("token");
+        setUser(null);
+      });
+  }, []);
 
-  const logout = () => {
-    setIsAuthenticated(false);
-    setRole(null);
-  };
+  async function login(email: string, password: string) {
+    const res = await apiRequest("/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+
+    localStorage.setItem("token", res.token);
+    setUser(res.user);
+  }
+
+  function logout() {
+    localStorage.removeItem("token");
+    setUser(null);
+  }
 
   return (
     <AuthContext.Provider
       value={{
-        isAuthenticated,
+        user,
         role,
-        loginAsStudent,
-        loginAsInstructor,
+        isAuthenticated,
+        login,
         logout,
       }}
     >
@@ -49,8 +75,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }

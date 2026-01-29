@@ -1,79 +1,101 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import AuthLayout from "../components/auth/AuthLayout";
 import AuthInput from "../components/auth/AuthInput";
-import RoleToggle from "../components/auth/RoleToggle";
 import PrimaryButton from "../components/ui/PrimaryButton";
-import { Link } from "react-router-dom";
+import { apiRequest } from "../api/http";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
 
-  const [role, setRole] = useState<"student" | "instructor">("student");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"student" | "instructor">("student");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const nameError = name && name.length < 2 ? "Name is too short" : "";
-  const emailError =
-    email && !email.includes("@") ? "Enter a valid email" : "";
-  const passwordError =
-    password && password.length < 6 ? "Min 6 characters" : "";
+  async function handleSubmit() {
+    if (!name || !email || password.length < 6) return;
 
-  const isValid =
-    name && email && password && !nameError && !emailError && !passwordError;
+    setLoading(true);
+    setError(null);
 
-  function handleSubmit() {
-    if (!isValid) return;
+    try {
+      await apiRequest("/register", {
+        method: "POST",
+        body: JSON.stringify({ name, email, password, role }),
+      });
 
-    // TEMP: simulate successful registration
-    navigate("/");
+      navigate("/login", { replace: true });
+    } catch (e: any) {
+      setError(e.message || "Registration failed");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <AuthLayout
-      title="Start Your Learning Journey."
-      description="Join thousands of students and instructors. Master new skills with AI-powered personalized learning."
+      title="Create your account"
+      description="Start learning or teaching in minutes."
     >
-      <h2 style={{ marginBottom: 8 }}>Create Account</h2>
-      <p style={{ color: "#64748b", marginBottom: 24 }}>
-        Please enter your details below.
-      </p>
+      {error && (
+        <div
+          style={{
+            background: "#fee2e2",
+            color: "#991b1b",
+            padding: 12,
+            borderRadius: 12,
+            fontWeight: 600,
+            marginBottom: 20,
+          }}
+        >
+          {error}
+        </div>
+      )}
 
-      <RoleToggle value={role} onChange={setRole} />
-
-      <AuthInput
-        label="Full Name"
-        placeholder="John Doe"
-        value={name}
-        onChange={setName}
-        error={nameError}
-      />
-
+      <AuthInput label="Full Name" value={name} onChange={setName} />
       <AuthInput
         label="Email Address"
-        placeholder="name@company.com"
         value={email}
         onChange={setEmail}
-        error={emailError}
       />
-
       <AuthInput
         label="Password"
         type="password"
         value={password}
         onChange={setPassword}
-        error={passwordError}
       />
 
-      <div onClick={handleSubmit}>
-        <PrimaryButton disabled={!isValid}>Create Account</PrimaryButton>
+      {/* ROLE SELECT */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ fontWeight: 600 }}>Account Type</label>
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value as any)}
+          style={{
+            width: "100%",
+            padding: 12,
+            marginTop: 8,
+            borderRadius: 10,
+          }}
+        >
+          <option value="student">Student</option>
+          <option value="instructor">Instructor</option>
+        </select>
       </div>
 
-      <p style={{ marginTop: 32, textAlign: "center", color: "#64748b" }}>
+      <div onClick={handleSubmit}>
+        <PrimaryButton disabled={loading}>
+          {loading ? "Creating..." : "Create Account"}
+        </PrimaryButton>
+      </div>
+
+      <p style={{ marginTop: 24, textAlign: "center" }}>
         Already have an account?{" "}
-        <Link to="/login" style={{ color: "#2f66e6", fontWeight: 600 }}>
-          Log in here
+        <Link to="/login" style={{ fontWeight: 600 }}>
+          Sign in
         </Link>
       </p>
     </AuthLayout>

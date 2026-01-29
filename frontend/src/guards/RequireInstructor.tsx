@@ -7,24 +7,14 @@ export default function RequireInstructor({
 }: {
   children: ReactNode;
 }) {
-  const { isAuthenticated, role } = useAuth();
+  const { user } = useAuth();
 
-  if (!isAuthenticated) {
-    return (
-      <Navigate
-        to="/login?error=signin_required"
-        replace
-      />
-    );
+  if (!user) {
+    return <Navigate to="/login?error=signin_required" replace />;
   }
 
-  if (role !== "instructor") {
-    return (
-      <Navigate
-        to="/login?error=not_instructor"
-        replace
-      />
-    );
+  if (user.role !== "instructor") {
+    return <Navigate to="/login?error=not_instructor" replace />;
   }
 
   return <>{children}</>;
