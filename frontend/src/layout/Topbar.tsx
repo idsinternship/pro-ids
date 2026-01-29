@@ -12,7 +12,7 @@ export default function Topbar({ title }: Props) {
       <div className="user">
         <div>
           <div style={{ fontWeight: 600 }}>bjkhjvghcfx</div>
-          <div className="role">STUDENT</div>
+
         </div>
 
         <UserMenu />
