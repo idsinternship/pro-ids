@@ -30,4 +30,11 @@ class User extends Authenticatable implements JWTSubject
     {
         return [];
     }
+    
+
+
+    public function lessonCompletions()
+    {
+        return $this->hasMany(\App\Models\LessonCompletion::class);
+    }
 }

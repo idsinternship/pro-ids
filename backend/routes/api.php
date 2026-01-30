@@ -1,56 +1,56 @@
 <?php
+
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\MyLearningController;
+use App\Http\Controllers\{
+    CourseController,
+    LessonController,
+    QuizController,
+    QuizQuestionController,
+    QuizOptionController,
+    QuizAttemptController
+};
 
 /*
 |--------------------------------------------------------------------------
-| Health
+| Authenticated Routes
 |--------------------------------------------------------------------------
 */
-Route::get('/health', fn () => ['status' => 'ok']);
+Route::middleware(['auth:sanctum'])->group(function () {
 
-/*
-|--------------------------------------------------------------------------
-| SAFE FRONTEND ROUTES (NO AUTH)
-|--------------------------------------------------------------------------
-*/
-Route::get('/my-progress', [MyLearningController::class, 'index']);
+    /*
+    |--------------------------------------------------------------------------
+    | INSTRUCTOR ROUTES
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware('role:instructor')->group(function () {
 
-Route::get('/courses', fn () => response()->json([]));
+        // Courses
+        Route::post('/courses', [CourseController::class, 'store']);
+        Route::get('/instructor/courses', [CourseController::class, 'myCourses']);
+        Route::post('/courses/{course}/publish', [CourseController::class, 'publish']);
 
-Route::get('/auth/me', fn () => response()->json(null));
+        // Lessons
+        Route::post('/lessons', [LessonController::class, 'store']);
 
-/*
-|--------------------------------------------------------------------------
-| Auth (JWT – strict)
-|--------------------------------------------------------------------------
-*/
-Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/refresh', [AuthController::class, 'refresh']);
-
-    Route::middleware('auth:api')->group(function () {
-        Route::get('/me', [AuthController::class, 'me']);
-        Route::post('/logout', [AuthController::class, 'logout']);
+        // Quizzes
+        Route::post('/quizzes', [QuizController::class, 'store']);
+        Route::post('/quiz-questions', [QuizQuestionController::class, 'store']);
+        Route::post('/quiz-options', [QuizOptionController::class, 'store']);
     });
-});
 
-/*
-|--------------------------------------------------------------------------
-| Student (STRICT – LATER)
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth:api', 'role:student'])->group(function () {
-    // real student routes (keep them)
-});
+    /*
+    |--------------------------------------------------------------------------
+    | STUDENT ROUTES
+    |--------------------------------------------------------------------------
+    */
 
-/*
-|--------------------------------------------------------------------------
-| Instructor (STRICT – LATER)
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth:api', 'role:instructor'])->group(function () {
-    // real instructor routes
+    // Browse courses
+    Route::get('/courses', [CourseController::class, 'index']);
+    Route::get('/courses/{course}', [CourseController::class, 'show']);
+
+    // Learning progress
+    Route::post('/lessons/{lesson}/complete', [LessonController::class, 'complete']);
+
+    // Quiz attempts
+    Route::post('/quizzes/{quiz}/submit', [QuizAttemptController::class, 'submit']);
 });

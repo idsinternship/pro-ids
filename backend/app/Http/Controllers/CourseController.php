@@ -38,6 +38,8 @@ class CourseController extends Controller
     {
         return Course::where('instructor_id', auth()->id())
             ->withCount('lessons')
+            ->withCount('quizzes')
+            ->orderByDesc('created_at')
             ->get();
     }
 
@@ -50,12 +52,15 @@ class CourseController extends Controller
     {
         abort_unless($course->instructor_id === auth()->id(), 403);
 
+        // Safety: don’t publish empty courses
+        abort_if($course->lessons()->count() === 0, 422, 'Course has no lessons');
+
         $course->update([
             'published' => true,
         ]);
 
         return response()->json([
-            'message' => 'Course published',
+            'message' => 'Course published successfully',
             'course' => $course,
         ]);
     }
@@ -70,6 +75,8 @@ class CourseController extends Controller
         return Course::where('published', true)
             ->with('instructor:id,name')
             ->withCount('lessons')
+            ->withCount('quizzes')
+            ->orderByDesc('created_at')
             ->get();
     }
 
@@ -84,7 +91,8 @@ class CourseController extends Controller
 
         return $course->load([
             'instructor:id,name',
-            'lessons',
+            'lessons' => fn ($q) => $q->orderBy('order'),
+            'quizzes',
         ]);
     }
 }
