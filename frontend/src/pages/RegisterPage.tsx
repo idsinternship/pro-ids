@@ -65,7 +65,6 @@ export default function RegisterPage() {
         onChange={setPassword}
       />
 
-      {/* ROLE SELECT */}
       <div style={{ marginBottom: 16 }}>
         <label style={{ fontWeight: 600 }}>Account Type</label>
         <select

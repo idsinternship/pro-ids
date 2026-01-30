@@ -1,23 +1,19 @@
-const API_URL = import.meta.env.VITE_API_URL;
+import axios from "axios";
 
-export async function apiRequest(
-  path: string,
-  options: RequestInit = {}
-) {
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+});
+
+api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
-
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error(await res.text());
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
+  return config;
+});
 
-  return res.json();
-}
+export default api;
