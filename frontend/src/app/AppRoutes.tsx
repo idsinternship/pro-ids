@@ -23,7 +23,15 @@ import InstructorSettingsPage from "../pages/instructor/InstructorSettingsPage";
 import InstructorCreateEditCoursePage from "../pages/instructor/InstructorCreateEditCoursePage";
 
 export default function AppRoutes() {
-  const { isAuthenticated, role } = useAuth();
+  const { user, loading } = useAuth();
+
+  const isAuthenticated = !!user;
+  const role = user?.role;
+
+  // ⛔ CRITICAL: wait for /me to resolve
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <Routes>
@@ -43,8 +51,14 @@ export default function AppRoutes() {
           <Route path="/catalog" element={<CourseCatalogPage />} />
           <Route path="/progress" element={<MyProgressPage />} />
           <Route path="/certificates" element={<CertificatesPage />} />
-          <Route path="/course/:id/lesson/:lessonId" element={<CourseLessonPage />} />
-          <Route path="/student/certificates/:id" element={<CertificateViewPage />} />
+          <Route
+            path="/course/:id/lesson/:lessonId"
+            element={<CourseLessonPage />}
+          />
+          <Route
+            path="/student/certificates/:id"
+            element={<CertificateViewPage />}
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       )}
@@ -52,13 +66,34 @@ export default function AppRoutes() {
       {/* INSTRUCTOR */}
       {isAuthenticated && role === "instructor" && (
         <Route element={<InstructorLayout />}>
-          <Route path="/instructor/overview" element={<InstructorOverviewPage />} />
-          <Route path="/instructor/courses" element={<InstructorCoursesPage />} />
-          <Route path="/instructor/courses/new" element={<InstructorCreateEditCoursePage />} />
-          <Route path="/instructor/courses/:id/edit" element={<InstructorCreateEditCoursePage />} />
-          <Route path="/instructor/analytics" element={<InstructorAnalyticsPage />} />
-          <Route path="/instructor/settings" element={<InstructorSettingsPage />} />
-          <Route path="*" element={<Navigate to="/instructor/overview" replace />} />
+          <Route
+            path="/instructor/overview"
+            element={<InstructorOverviewPage />}
+          />
+          <Route
+            path="/instructor/courses"
+            element={<InstructorCoursesPage />}
+          />
+          <Route
+            path="/instructor/courses/new"
+            element={<InstructorCreateEditCoursePage />}
+          />
+          <Route
+            path="/instructor/courses/:id/edit"
+            element={<InstructorCreateEditCoursePage />}
+          />
+          <Route
+            path="/instructor/analytics"
+            element={<InstructorAnalyticsPage />}
+          />
+          <Route
+            path="/instructor/settings"
+            element={<InstructorSettingsPage />}
+          />
+          <Route
+            path="*"
+            element={<Navigate to="/instructor/overview" replace />}
+          />
         </Route>
       )}
     </Routes>

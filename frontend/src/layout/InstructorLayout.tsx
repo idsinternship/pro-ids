@@ -1,63 +1,38 @@
-import { Outlet, NavLink } from "react-router-dom";
-import Topbar from "./Topbar";
+import { NavLink, Outlet } from "react-router-dom";
 
 export default function InstructorLayout() {
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
-      {/* SIDEBAR */}
+      {/* SIDENAV */}
       <aside
         style={{
-          width: 260,
-          background: "#fff",
+          width: 240,
           padding: 20,
-          borderRight: "1px solid #e5e7eb",
+          borderRight: "1px solid #ddd",
         }}
       >
-        <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 32 }}>
-          IDS Academy
-        </div>
+        <h3>Instructor</h3>
 
-        <NavItem to="/instructor/overview" label="Overview" />
-        <NavItem to="/instructor/courses" label="My Courses" />
-        <NavItem to="/instructor/analytics" label="Analytics" />
-        <NavItem to="/instructor/settings" label="Platform Settings" />
+        <nav style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <NavLink to="/instructor/overview">Overview</NavLink>
+
+          <NavLink to="/instructor/courses">My Courses</NavLink>
+
+          {/* ✅ THIS IS THE MISSING LINK */}
+          <NavLink to="/instructor/courses/new">
+            + Create Course
+          </NavLink>
+
+          <NavLink to="/instructor/analytics">Analytics</NavLink>
+
+          <NavLink to="/instructor/settings">Settings</NavLink>
+        </nav>
       </aside>
 
-      {/* MAIN */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {/* ✅ TOPBAR WITH REQUIRED PROP */}
-        <Topbar title="Instructor Dashboard" />
-
-        <main
-          style={{
-            flex: 1,
-            background: "#f8fafc",
-            padding: 32,
-          }}
-        >
-          <Outlet />
-        </main>
-      </div>
+      {/* MAIN CONTENT */}
+      <main style={{ flex: 1, padding: 24 }}>
+        <Outlet />
+      </main>
     </div>
-  );
-}
-
-function NavItem({ to, label }: { to: string; label: string }) {
-  return (
-    <NavLink
-      to={to}
-      style={({ isActive }) => ({
-        display: "block",
-        padding: "12px 16px",
-        borderRadius: 12,
-        marginBottom: 8,
-        fontWeight: 600,
-        textDecoration: "none",
-        background: isActive ? "#2f66e6" : "transparent",
-        color: isActive ? "#fff" : "#0f172a",
-      })}
-    >
-      {label}
-    </NavLink>
   );
 }

@@ -1,42 +1,32 @@
 import api from "./client";
 
-export type User = {
-  id: number;
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface RegisterPayload {
   name: string;
   email: string;
+  password: string;
   role: "student" | "instructor";
+}
+
+export const login = async (data: LoginPayload) => {
+  const res = await api.post("/login", data);
+  return res.data;
 };
 
-type AuthResponse = {
-  token: string;
-  user: User;
+export const register = async (data: RegisterPayload) => {
+  const res = await api.post("/register", data);
+  return res.data;
 };
 
-export async function login(email: string, password: string): Promise<AuthResponse> {
-  const { data } = await api.post("/auth/login", { email, password });
-  return data;
-}
+export const logout = async () => {
+  await api.post("/logout");
+};
 
-export async function register(
-  name: string,
-  email: string,
-  password: string,
-  role: "student" | "instructor"
-): Promise<AuthResponse> {
-  const { data } = await api.post("/auth/register", {
-    name,
-    email,
-    password,
-    role,
-  });
-  return data;
-}
-
-export async function me(): Promise<User> {
-  const { data } = await api.get("/auth/me");
-  return data;
-}
-
-export async function logout(): Promise<void> {
-  await api.post("/auth/logout");
-}
+export const me = async () => {
+  const res = await api.get("/me");
+  return res.data;
+};

@@ -1,11 +1,21 @@
 import api from "./client";
-import { Course, CreateCoursePayload } from "../types/instructor";
 
-export const createCourse = (data: CreateCoursePayload) =>
-  api.post<Course>("/courses", data);
+export interface CreateCoursePayload {
+  title: string;
+  description?: string;
+}
 
-export const publishCourse = (courseId: number) =>
-  api.post(`/courses/${courseId}/publish`);
+export const createCourse = async (data: CreateCoursePayload) => {
+  const res = await api.post("/courses", data);
+  return res.data;
+};
 
-export const getInstructorCourses = () =>
-  api.get<Course[]>("/instructor/courses");
+export const getInstructorCourses = async () => {
+  const res = await api.get("/instructor/courses");
+  return res.data;
+};
+
+export const publishCourse = async (courseId: number) => {
+  const res = await api.post(`/courses/${courseId}/publish`);
+  return res.data;
+};

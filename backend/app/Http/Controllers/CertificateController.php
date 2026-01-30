@@ -7,39 +7,32 @@ use App\Models\Certificate;
 use App\Models\LessonCompletion;
 use App\Models\QuizAttempt;
 use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class CertificateController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Student: Generate certificate
-    |--------------------------------------------------------------------------
-    */
     public function generate(Course $course)
     {
         abort_unless($course->published, 404);
 
-        $userId = auth()->id();
+        $user = auth()->user();
 
-        // 1️⃣ Check lessons
         $totalLessons = $course->lessons()->count();
-        $completedLessons = LessonCompletion::where('user_id', $userId)
+        $completedLessons = LessonCompletion::where('user_id', $user->id)
             ->whereIn('lesson_id', $course->lessons()->pluck('id'))
             ->count();
 
         abort_unless($totalLessons > 0 && $totalLessons === $completedLessons, 403);
 
-        // 2️⃣ Check quizzes
-        $avgScore = QuizAttempt::where('user_id', $userId)
+        $avgScore = QuizAttempt::where('user_id', $user->id)
             ->whereIn('quiz_id', $course->quizzes()->pluck('id'))
             ->avg('score');
 
         abort_unless($avgScore !== null && $avgScore >= 60, 403);
 
-        // 3️⃣ Create or return certificate
         $certificate = Certificate::firstOrCreate(
             [
-                'user_id' => $userId,
+                'user_id' => $user->id,
                 'course_id' => $course->id,
             ],
             [
@@ -48,8 +41,12 @@ class CertificateController extends Controller
             ]
         );
 
-        return response()->json([
-            'certificate' => $certificate,
+        $pdf = Pdf::loadView("certificates.certificate", [
+            "user" => $user,
+            "course" => $course,
+            "certificate" => $certificate,
         ]);
+
+        return $pdf->download("certificate-{$course->id}.pdf");
     }
 }
