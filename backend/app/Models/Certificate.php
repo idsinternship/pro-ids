@@ -2,23 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Certificate extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'user_id',
         'course_id',
         'verification_code',
-        'download_url',
-        'generated_at',
-    ];
-
-    protected $casts = [
-        'generated_at' => 'datetime',
+        'issued_at',
     ];
 
     public function user()

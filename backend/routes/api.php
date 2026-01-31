@@ -1,88 +1,104 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\{
-    CourseController,
-    LessonController,
-    QuizController,
-    QuizQuestionController,
-    QuizOptionController,
-    QuizAttemptController,
-    ProgressController,
-    CertificateController
-};
+
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CourseController;
+use App\Http\Controllers\EnrollmentController;
+use App\Http\Controllers\InstructorAnalyticsController;
+use App\Http\Controllers\CertificateController;
+use App\Http\Controllers\LessonProgressController;
 
 /*
 |--------------------------------------------------------------------------
-| Public Auth Routes
+| API Routes
 |--------------------------------------------------------------------------
+| All routes are prefixed with /api
+| Authentication: JWT via auth:api
 */
-Route::post('/login', [AuthController::class, 'login']);
+
+/* ======================================================
+| AUTH (PUBLIC)
+|======================================================*/
 Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
 
-/*
-|--------------------------------------------------------------------------
-| Public Certificate Verification (NO AUTH)
-|--------------------------------------------------------------------------
-*/
-Route::get('/certificates/verify/{code}', [CertificateController::class, 'verify']);
+/* ======================================================
+| PUBLIC COURSES
+|======================================================*/
+Route::get('/courses', [CourseController::class, 'index']);
+Route::get('/courses/{course}', [CourseController::class, 'show']);
 
-/*
-|--------------------------------------------------------------------------
-| Authenticated Routes
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth:api'])->group(function () {
+/* ======================================================
+| PROTECTED ROUTES (JWT)
+|======================================================*/
+Route::middleware('auth:api')->group(function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Auth / Profile
-    |--------------------------------------------------------------------------
-    */
-    Route::post('/logout', [AuthController::class, 'logout']);
+    /* --------------------
+    | AUTH
+    |--------------------*/
     Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/logout', [AuthController::class, 'logout']);
 
-    /*
-    |--------------------------------------------------------------------------
-    | INSTRUCTOR ROUTES
-    |--------------------------------------------------------------------------
-    */
-    Route::middleware('role:instructor')->group(function () {
+    /* --------------------
+    | INSTRUCTOR – COURSES
+    |--------------------*/
+    Route::post('/courses', [CourseController::class, 'store']);
+    Route::get('/instructor/courses', [CourseController::class, 'myCourses']);
+    Route::post('/courses/{course}/publish', [CourseController::class, 'publish']);
 
-        // Courses
-        Route::post('/courses', [CourseController::class, 'store']);
-        Route::get('/instructor/courses', [CourseController::class, 'myCourses']);
-        Route::post('/courses/{course}/publish', [CourseController::class, 'publish']);
+    /* --------------------
+    | INSTRUCTOR – ANALYTICS
+    |--------------------*/
+    Route::get(
+        '/instructor/analytics',
+        [InstructorAnalyticsController::class, 'dashboard']
+    );
 
-        // Lessons
-        Route::post('/lessons', [LessonController::class, 'store']);
+    /* --------------------
+    | ENROLLMENTS
+    |--------------------*/
+    Route::post(
+        '/courses/{course}/enroll',
+        [EnrollmentController::class, 'enroll']
+    );
 
-        // Quizzes
-        Route::post('/quizzes', [QuizController::class, 'store']);
-        Route::post('/quiz-questions', [QuizQuestionController::class, 'store']);
-        Route::post('/quiz-options', [QuizOptionController::class, 'store']);
-    });
+    Route::delete(
+        '/courses/{course}/unenroll',
+        [EnrollmentController::class, 'unenroll']
+    );
 
-    /*
-    |--------------------------------------------------------------------------
-    | STUDENT ROUTES
-    |--------------------------------------------------------------------------
-    */
+    Route::get(
+        '/my-enrollments',
+        [EnrollmentController::class, 'myEnrollments']
+    );
 
-    // Browse courses
-    Route::get('/courses', [CourseController::class, 'index']);
-    Route::get('/courses/{course}', [CourseController::class, 'show']);
+    /* --------------------
+    | LESSON PROGRESS
+    |--------------------*/
+    Route::post(
+        '/lessons/{lesson}/complete',
+        [LessonProgressController::class, 'complete']
+    );
 
-    // Lesson progress
-    Route::post('/lessons/{lesson}/complete', [LessonController::class, 'complete']);
+    Route::get(
+        '/courses/{course}/progress',
+        [LessonProgressController::class, 'courseProgress']
+    );
 
-    // Quiz attempts
-    Route::post('/quizzes/{quiz}/submit', [QuizAttemptController::class, 'submit']);
-
-    // Course progress
-    Route::get('/courses/{course}/progress', [ProgressController::class, 'courseProgress']);
-
-    // Certificate generation (STRICTLY AUTHENTICATED)
-    Route::post('/courses/{course}/certificate', [CertificateController::class, 'generate']);
+    /* --------------------
+    | CERTIFICATES (ISSUE)
+    |--------------------*/
+    Route::post(
+        '/courses/{course}/certificate',
+        [CertificateController::class, 'issue']
+    );
 });
+
+/* ======================================================
+| CERTIFICATE VERIFICATION (PUBLIC)
+|======================================================*/
+Route::get(
+    '/certificates/verify/{code}',
+    [CertificateController::class, 'verify']
+);

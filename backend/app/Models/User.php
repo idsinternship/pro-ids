@@ -2,21 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable implements JWTSubject
+class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use Notifiable;
 
     protected $fillable = [
         'name',
         'email',
         'password',
-        'role',
+        'role', // student | instructor
     ];
 
     protected $hidden = [
@@ -24,60 +21,20 @@ class User extends Authenticatable implements JWTSubject
         'remember_token',
     ];
 
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-    ];
-
-    /*
-    |--------------------------------------------------------------------------
-    | JWT
-    |--------------------------------------------------------------------------
-    */
-    public function getJWTIdentifier()
+    /* ===== Instructor courses ===== */
+    public function courses()
     {
-        return $this->getKey();
+        return $this->hasMany(Course::class, 'instructor_id');
     }
 
-    public function getJWTCustomClaims()
-    {
-        return [];
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Relationships
-    |--------------------------------------------------------------------------
-    */
-
-    /**
-     * Courses the user is enrolled in (STUDENT).
-     */
+    /* ===== Enrollments ===== */
     public function enrollments()
     {
         return $this->hasMany(Enrollment::class);
     }
 
-    /**
-     * Quiz attempts made by the user.
-     */
-    public function quizAttempts()
+    public function enrolledCourses()
     {
-        return $this->hasMany(QuizAttempt::class);
-    }
-
-    /**
-     * Lesson completions by the user.
-     */
-    public function lessonCompletions()
-    {
-        return $this->hasMany(LessonCompletion::class);
-    }
-
-    /**
-     * Certificates earned by the user.
-     */
-    public function certificates()
-    {
-        return $this->hasMany(Certificate::class);
+        return $this->belongsToMany(Course::class, 'enrollments');
     }
 }

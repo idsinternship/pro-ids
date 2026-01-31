@@ -3,55 +3,45 @@
 namespace App\Http\Controllers;
 
 use App\Models\Lesson;
-use App\Models\LessonCompletion;
+use App\Models\LessonProgress;
+use Illuminate\Support\Facades\Auth;
 
 class LessonProgressController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Student: Mark lesson as completed
-    |--------------------------------------------------------------------------
-    */
     public function complete(Lesson $lesson)
     {
-        abort_unless($lesson->course->published, 404);
-
-        $completion = LessonCompletion::firstOrCreate([
-            'user_id' => auth()->id(),
-            'lesson_id' => $lesson->id,
-        ]);
+        $progress = LessonProgress::updateOrCreate(
+            [
+                'user_id' => Auth::id(),
+                'lesson_id' => $lesson->id,
+            ],
+            [
+                'completed' => true,
+                'completed_at' => now(),
+            ]
+        );
 
         return response()->json([
             'message' => 'Lesson completed',
-            'completed_at' => $completion->completed_at,
+            'progress' => $progress,
         ]);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Student: Get progress for a course
-    |--------------------------------------------------------------------------
-    */
-    public function progress($courseId)
+    public function courseProgress($courseId)
     {
-        $userId = auth()->id();
-
         $totalLessons = Lesson::where('course_id', $courseId)->count();
 
-        $completedLessons = LessonCompletion::where('user_id', $userId)
-            ->whereIn(
-                'lesson_id',
-                Lesson::where('course_id', $courseId)->pluck('id')
-            )
+        $completed = LessonProgress::where('user_id', Auth::id())
+            ->whereHas('lesson', fn ($q) => $q->where('course_id', $courseId))
+            ->where('completed', true)
             ->count();
 
         return response()->json([
-            'course_id' => $courseId,
-            'completed' => $completedLessons,
-            'total' => $totalLessons,
-            'percentage' => $totalLessons === 0
-                ? 0
-                : round(($completedLessons / $totalLessons) * 100),
+            'total_lessons' => $totalLessons,
+            'completed_lessons' => $completed,
+            'progress_percent' => $totalLessons > 0
+                ? round(($completed / $totalLessons) * 100, 2)
+                : 0,
         ]);
     }
 }

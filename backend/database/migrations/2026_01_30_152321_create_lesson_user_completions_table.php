@@ -5,21 +5,22 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
-    public function up(): void
+    public function up()
     {
-        Schema::create('lesson_user_completions', function (Blueprint $table) {
+        Schema::create('lesson_progress', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('lesson_id')->constrained()->cascadeOnDelete();
-            $table->timestamp('completed_at')->useCurrent();
+            $table->boolean('completed')->default(false);
+            $table->timestamp('completed_at')->nullable();
             $table->timestamps();
 
             $table->unique(['user_id', 'lesson_id']);
         });
     }
 
-    public function down(): void
+    public function down()
     {
-        Schema::dropIfExists('lesson_user_completions');
+        Schema::dropIfExists('lesson_progress');
     }
 };
