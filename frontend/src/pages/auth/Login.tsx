@@ -1,97 +1,56 @@
-import { useState } from 'react'
-import {
-  Box,
-  Button,
-  Container,
-  TextField,
-  Typography,
-  Alert
-} from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { login as loginApi } from '../../api/auth.api'
-import { useAuth } from '../../auth/useAuth'
-import type { AxiosError } from 'axios'
-
-interface LoginError {
-  message?: string
-}
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../auth/useAuth";
 
 export default function Login() {
-  const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
-
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const res = await loginApi({ email, password })
-      const token: string | undefined = res.data?.token
-
-      if (!token) {
-        throw new Error('Token not returned')
-      }
-
-      login(token)
-      navigate('/student')
-    } catch (err) {
-      const axiosErr = err as AxiosError<LoginError>
-      setError(
-        axiosErr.response?.data?.message ??
-        'Invalid email or password'
-      )
-    } finally {
-      setLoading(false)
+      await login(email, password);
+      navigate("/");
+    } catch {
+      setError("Invalid credentials");
     }
-  }
+  };
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ mt: 8, p: 4, borderRadius: 2, boxShadow: 3 }}>
-        <Typography variant="h5" mb={3} textAlign="center">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-zinc-900 to-black text-white">
+      <form
+        onSubmit={submit}
+        className="w-full max-w-md p-8 rounded-2xl bg-zinc-900/70 backdrop-blur-xl border border-zinc-800 shadow-2xl"
+      >
+        <h1 className="text-3xl font-bold mb-6 tracking-wide">
+          Welcome Back
+        </h1>
+
+        {error && <div className="mb-4 text-red-400">{error}</div>}
+
+        <input
+          className="w-full mb-3 p-3 rounded-lg bg-black/50 border border-zinc-700"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+
+        <input
+          type="password"
+          className="w-full mb-4 p-3 rounded-lg bg-black/50 border border-zinc-700"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <button className="w-full p-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold transition">
           Login
-        </Typography>
-
-        {error && <Alert severity="error">{error}</Alert>}
-
-        <Box component="form" onSubmit={handleSubmit}>
-          <TextField
-            label="Email"
-            type="email"
-            fullWidth
-            margin="normal"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          <TextField
-            label="Password"
-            type="password"
-            fullWidth
-            margin="normal"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3 }}
-            disabled={loading}
-          >
-            {loading ? 'Logging in…' : 'Login'}
-          </Button>
-        </Box>
-      </Box>
-    </Container>
-  )
+        </button>
+      </form>
+    </div>
+  );
 }

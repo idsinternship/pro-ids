@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useAuth } from "../../auth/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../auth/useAuth";
 
 export default function Register() {
   const { register } = useAuth();
@@ -32,12 +32,10 @@ export default function Register() {
           Create Account
         </h1>
 
-        {error && (
-          <div className="mb-4 text-sm text-red-400">{error}</div>
-        )}
+        {error && <div className="mb-4 text-red-400">{error}</div>}
 
         <input
-          className="w-full mb-3 p-3 rounded-lg bg-black/50 border border-zinc-700 focus:outline-none"
+          className="w-full mb-3 p-3 rounded-lg bg-black/50 border border-zinc-700"
           placeholder="Full name"
           value={name}
           onChange={(e) => setName(e.target.value)}

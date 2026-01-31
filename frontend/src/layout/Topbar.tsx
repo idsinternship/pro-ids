@@ -1,5 +1,5 @@
-import { useAuth } from "../auth/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/useAuth";
 
 export default function Topbar() {
   const { user, logout } = useAuth();
