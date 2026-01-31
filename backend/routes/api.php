@@ -1,121 +1,85 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CourseController;
-use App\Http\Controllers\EnrollmentController;
-use App\Http\Controllers\InstructorAnalyticsController;
-use App\Http\Controllers\CertificateController;
-use App\Http\Controllers\LessonProgressController;
+use App\Http\Controllers\LessonController;
 use App\Http\Controllers\QuizController;
+use App\Http\Controllers\QuizQuestionController;
+use App\Http\Controllers\QuizOptionController;
+use App\Http\Controllers\QuizAttemptController;
+use App\Http\Controllers\EnrollmentController;
+use App\Http\Controllers\ProgressController;
+use App\Http\Controllers\LessonProgressController;
+use App\Http\Controllers\MyLearningController;
+use App\Http\Controllers\CertificateController;
+use App\Http\Controllers\StudentDashboardController;
+use App\Http\Controllers\InstructorDashboardController;
+use App\Http\Controllers\InstructorAnalyticsController;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes
+| Auth
 |--------------------------------------------------------------------------
-| All routes are prefixed with /api
-| Authentication: JWT via auth:api
 */
-
-/* ======================================================
-| AUTH (PUBLIC)
-|======================================================*/
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-/* ======================================================
-| PUBLIC COURSES
-|======================================================*/
-Route::get('/courses', [CourseController::class, 'index']);
-Route::get('/courses/{course}', [CourseController::class, 'show']);
-
-/* ======================================================
-| PROTECTED ROUTES (JWT)
-|======================================================*/
 Route::middleware('auth:api')->group(function () {
 
-    /* --------------------
-    | AUTH
-    |--------------------*/
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    /* --------------------
-    | INSTRUCTOR – COURSES
-    |--------------------*/
-    Route::post('/courses', [CourseController::class, 'store']);
-    Route::get('/instructor/courses', [CourseController::class, 'myCourses']);
-    Route::post('/courses/{course}/publish', [CourseController::class, 'publish']);
+    /*
+    |--------------------------------------------------------------------------
+    | Student Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware('role:student')->group(function () {
 
-    /* --------------------
-    | INSTRUCTOR – ANALYTICS (INSTRUCTOR ONLY)
-    |--------------------*/
-    Route::middleware('instructor')->group(function () {
+        Route::get('/student/dashboard', [StudentDashboardController::class, 'index']);
 
-        Route::get(
-            '/instructor/analytics',
-            [InstructorAnalyticsController::class, 'dashboard']
-        );
+        Route::post('/courses/{courseId}/enroll', [EnrollmentController::class, 'enroll']);
 
-        Route::get(
-            '/instructor/courses/{course}/analytics',
-            [InstructorAnalyticsController::class, 'courseAnalytics']
-        );
+        Route::post('/lessons/{lessonId}/complete', [LessonProgressController::class, 'complete']);
+
+        Route::post('/quizzes/{quizId}/attempt', [QuizAttemptController::class, 'attempt']);
+
+        Route::get('/my-learning', [MyLearningController::class, 'index']);
+
+        Route::get('/progress/{courseId}', [ProgressController::class, 'courseProgress']);
+
+        Route::get('/certificate/{courseId}', [CertificateController::class, 'download']);
     });
 
-    /* --------------------
-    | ENROLLMENTS
-    |--------------------*/
-    Route::post(
-        '/courses/{course}/enroll',
-        [EnrollmentController::class, 'enroll']
-    );
+    /*
+    |--------------------------------------------------------------------------
+    | Instructor Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware('role:instructor')->group(function () {
 
-    Route::delete(
-        '/courses/{course}/unenroll',
-        [EnrollmentController::class, 'unenroll']
-    );
+        Route::get('/instructor/dashboard', [InstructorDashboardController::class, 'index']);
+        Route::get('/instructor/analytics', [InstructorAnalyticsController::class, 'index']);
 
-    Route::get(
-        '/my-enrollments',
-        [EnrollmentController::class, 'myEnrollments']
-    );
+        Route::post('/courses', [CourseController::class, 'store']);
+        Route::put('/courses/{id}', [CourseController::class, 'update']);
+        Route::delete('/courses/{id}', [CourseController::class, 'destroy']);
 
-    /* --------------------
-    | LESSON PROGRESS
-    |--------------------*/
-    Route::post(
-        '/lessons/{lesson}/complete',
-        [LessonProgressController::class, 'complete']
-    );
+        Route::post('/courses/{courseId}/lessons', [LessonController::class, 'store']);
 
-    Route::get(
-        '/courses/{course}/progress',
-        [LessonProgressController::class, 'courseProgress']
-    );
+        Route::post('/quizzes', [QuizController::class, 'store']);
+        Route::post('/quizzes/{quizId}/questions', [QuizQuestionController::class, 'store']);
+        Route::post('/questions/{questionId}/options', [QuizOptionController::class, 'store']);
+    });
 
-    /* --------------------
-    | QUIZZES
-    |--------------------*/
-    Route::post(
-        '/quizzes/{quiz}/submit',
-        [QuizController::class, 'submit']
-    );
-
-    /* --------------------
-    | CERTIFICATES
-    |--------------------*/
-    Route::post(
-        '/courses/{course}/certificate',
-        [CertificateController::class, 'issue']
-    );
+    /*
+    |--------------------------------------------------------------------------
+    | Shared (Authenticated)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/courses', [CourseController::class, 'index']);
+    Route::get('/courses/{id}', [CourseController::class, 'show']);
+    Route::get('/courses/{courseId}/lessons', [LessonController::class, 'index']);
+    Route::get('/quizzes/{quizId}', [QuizController::class, 'show']);
 });
-
-/* ======================================================
-| CERTIFICATE VERIFICATION (PUBLIC)
-|======================================================*/
-Route::get(
-    '/certificates/verify/{code}',
-    [CertificateController::class, 'verify']
-);

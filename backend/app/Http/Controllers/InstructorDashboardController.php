@@ -2,77 +2,51 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Auth;
 use App\Models\Course;
 use App\Models\Enrollment;
-use App\Models\Quiz;
 use App\Models\QuizAttempt;
-use Illuminate\Support\Facades\Auth;
 
 class InstructorDashboardController extends Controller
 {
     /**
-     * Aggregated analytics dashboard for instructor.
+     * Instructor dashboard summary
      */
     public function index()
     {
-        $instructor = Auth::user();
+        $user = Auth::guard('api')->user();
 
-        // Instructor courses
-        $courses = Course::where('created_by', $instructor->id)->get();
-        $courseIds = $courses->pluck('id');
+        if ($user->role !== 'instructor') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only instructors can access this dashboard'
+            ], 403);
+        }
 
-        // Course count
-        $courseCount = $courses->count();
+        $courseIds = Course::where('created_by', $user->id)->pluck('id');
 
-        // Enrollment count (unique students across all courses)
-        $totalEnrollments = Enrollment::whereIn('course_id', $courseIds)
+        $coursesCount = $courseIds->count();
+
+        $studentsCount = Enrollment::whereIn('course_id', $courseIds)
             ->distinct('user_id')
             ->count('user_id');
 
-        // Quizzes created under instructor courses
-        $quizzes = Quiz::whereIn('course_id', $courseIds)->get();
-
-        $quizStats = [];
-
-        foreach ($quizzes as $quiz) {
-            $attempts = QuizAttempt::where('quiz_id', $quiz->id)->get();
-
-            if ($attempts->count() === 0) {
-                continue;
-            }
-
-            $averageScore = round($attempts->avg('score'), 2);
-
-            $quizStats[] = [
-                'quiz_id' => $quiz->id,
-                'title' => $quiz->title,
-                'course_id' => $quiz->course_id,
-                'attempts' => $attempts->count(),
-                'average_score' => $averageScore,
-                'passing_score' => $quiz->passing_score,
-            ];
-        }
-
-        // Sort quizzes
-        $topQuizzes = collect($quizStats)
-            ->sortByDesc('average_score')
-            ->take(5)
-            ->values();
-
-        $lowQuizzes = collect($quizStats)
-            ->sortBy('average_score')
-            ->take(5)
-            ->values();
+        // Best score per quiz across instructor courses
+        $averageScore = QuizAttempt::whereIn('quiz_id', function ($q) use ($courseIds) {
+                $q->select('id')->from('quizzes')->whereIn('course_id', $courseIds);
+            })
+            ->selectRaw('MAX(score) as score')
+            ->groupBy('quiz_id')
+            ->get()
+            ->avg('score');
 
         return response()->json([
-            'instructor_id' => $instructor->id,
-            'courses_created' => $courseCount,
-            'total_enrolled_students' => $totalEnrollments,
-            'quiz_summary' => [
-                'total_quizzes' => $quizzes->count(),
-                'top_performing' => $topQuizzes,
-                'low_performing' => $lowQuizzes,
-            ],
+            'success' => true,
+            'data' => [
+                'courses_created' => $coursesCount,
+                'enrolled_students' => $studentsCount,
+                'average_quiz_score' => round($averageScore ?? 0, 2),
+            ]
         ]);
     }
 }

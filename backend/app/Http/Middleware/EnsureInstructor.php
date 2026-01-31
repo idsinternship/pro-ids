@@ -10,11 +10,12 @@ class EnsureInstructor
 {
     public function handle(Request $request, Closure $next)
     {
-        $user = Auth::user();
+        $user = Auth::guard('api')->user();
 
         if (! $user || $user->role !== 'instructor') {
             return response()->json([
-                'error' => 'Instructor access only'
+                'success' => false,
+                'message' => 'Forbidden: instructor access required'
             ], 403);
         }
 

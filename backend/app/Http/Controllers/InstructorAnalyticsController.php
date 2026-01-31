@@ -2,88 +2,50 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Course;
-use App\Models\Enrollment;
-use App\Models\Lesson;
-use App\Models\LessonProgress;
-use App\Models\QuizAttempt;
-use App\Models\Certificate;
 use Illuminate\Support\Facades\Auth;
+use App\Models\QuizAttempt;
+use App\Models\Course;
 
 class InstructorAnalyticsController extends Controller
 {
     /**
-     * Overall instructor dashboard
+     * Instructor analytics: top & low performing quizzes
      */
-    public function dashboard()
+    public function index()
     {
-        $instructorId = Auth::id();
+        $user = Auth::guard('api')->user();
 
-        $courses = Course::where('instructor_id', $instructorId)->get();
-
-        return response()->json([
-            'courses_count' => $courses->count(),
-            'course_ids' => $courses->pluck('id'),
-        ]);
-    }
-
-    /**
-     * Per-course analytics
-     */
-    public function courseAnalytics(Course $course)
-    {
-        // Ownership check
-        if ($course->instructor_id !== Auth::id()) {
+        if ($user->role !== 'instructor') {
             return response()->json([
-                'error' => 'Unauthorized'
+                'success' => false,
+                'message' => 'Only instructors can access analytics'
             ], 403);
         }
 
-        // Students
-        $enrolled = Enrollment::where('course_id', $course->id)->count();
+        $courseIds = Course::where('created_by', $user->id)->pluck('id');
 
-        // Lessons
-        $totalLessons = Lesson::where('course_id', $course->id)->count();
+        $quizPerformance = QuizAttempt::whereIn('quiz_id', function ($q) use ($courseIds) {
+                $q->select('id')->from('quizzes')->whereIn('course_id', $courseIds);
+            })
+            ->selectRaw('quiz_id, MAX(score) as best_score')
+            ->groupBy('quiz_id');
 
-        $completedStudents = LessonProgress::whereHas(
-            'lesson',
-            fn ($q) => $q->where('course_id', $course->id)
-        )
-        ->where('completed', true)
-        ->select('user_id')
-        ->groupBy('user_id')
-        ->havingRaw('COUNT(*) = ?', [$totalLessons])
-        ->count();
+        $topQuizzes = (clone $quizPerformance)
+            ->orderBy('best_score', 'desc')
+            ->take(5)
+            ->get();
 
-        $completionRate = $enrolled > 0
-            ? round(($completedStudents / $enrolled) * 100, 2)
-            : 0;
-
-        // Quiz analytics
-        $quizAttempts = QuizAttempt::whereHas(
-            'quiz',
-            fn ($q) => $q->where('course_id', $course->id)
-        )->get();
-
-        $avgScore = round($quizAttempts->avg('score') ?? 0, 2);
-
-        $passRate = $quizAttempts->count() > 0
-            ? round(($quizAttempts->where('passed', true)->count() / $quizAttempts->count()) * 100, 2)
-            : 0;
-
-        // Certificates
-        $certificates = Certificate::where('course_id', $course->id)->count();
+        $lowQuizzes = (clone $quizPerformance)
+            ->orderBy('best_score', 'asc')
+            ->take(5)
+            ->get();
 
         return response()->json([
-            'course' => [
-                'id' => $course->id,
-                'title' => $course->title,
-            ],
-            'students_enrolled' => $enrolled,
-            'completion_rate_percent' => $completionRate,
-            'average_quiz_score' => $avgScore,
-            'quiz_pass_rate_percent' => $passRate,
-            'certificates_issued' => $certificates,
+            'success' => true,
+            'data' => [
+                'top_quizzes' => $topQuizzes,
+                'low_quizzes' => $lowQuizzes,
+            ]
         ]);
     }
 }

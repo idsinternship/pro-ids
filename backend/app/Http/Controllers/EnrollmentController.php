@@ -2,51 +2,60 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\Course;
 use Illuminate\Support\Facades\Auth;
 
 class EnrollmentController extends Controller
 {
-    public function enroll(Course $course)
+    /**
+     * Enroll authenticated STUDENT into a published course
+     */
+    public function enroll($courseId)
     {
-        $user = Auth::user();
+        $user = Auth::guard('api')->user();
 
-        if (!$course->published) {
-            return response()->json(['error' => 'Course not published'], 403);
+        // Defensive role check
+        if ($user->role !== 'student') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only students can enroll in courses'
+            ], 403);
         }
 
-        $exists = Enrollment::where('user_id', $user->id)
+        $course = Course::where('id', $courseId)
+            ->where('is_published', true)
+            ->first();
+
+        if (! $course) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Course not found or not published'
+            ], 404);
+        }
+
+        // Prevent duplicate enrollment
+        $existing = Enrollment::where('user_id', $user->id)
             ->where('course_id', $course->id)
-            ->exists();
+            ->first();
 
-        if ($exists) {
-            return response()->json(['error' => 'Already enrolled'], 409);
+        if ($existing) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Already enrolled',
+                'data' => $existing
+            ]);
         }
 
-        Enrollment::create([
+        $enrollment = Enrollment::create([
             'user_id' => $user->id,
             'course_id' => $course->id,
         ]);
 
-        return response()->json(['message' => 'Enrolled successfully']);
-    }
-
-    public function unenroll(Course $course)
-    {
-        Enrollment::where('user_id', Auth::id())
-            ->where('course_id', $course->id)
-            ->delete();
-
-        return response()->json(['message' => 'Unenrolled']);
-    }
-
-    public function myEnrollments()
-    {
-        return response()->json(
-            Enrollment::with('course')
-                ->where('user_id', Auth::id())
-                ->get()
-        );
+        return response()->json([
+            'success' => true,
+            'message' => 'Enrolled successfully',
+            'data' => $enrollment
+        ], 201);
     }
 }

@@ -2,102 +2,47 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Course;
-use App\Models\Enrollment;
-use App\Models\LessonCompletion;
-use App\Models\Quiz;
-use App\Models\QuizAttempt;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Enrollment;
+use App\Models\LessonProgress;
+use App\Models\QuizAttempt;
 
 class StudentDashboardController extends Controller
 {
     /**
-     * Aggregated dashboard for the logged-in student.
+     * Student dashboard summary
      */
     public function index()
     {
-        $user = Auth::user();
+        $user = Auth::guard('api')->user();
 
-        // Get enrolled courses
-        $enrollments = Enrollment::where('user_id', $user->id)
-            ->with('course.lessons')
-            ->get();
-
-        $dashboardCourses = [];
-
-        foreach ($enrollments as $enrollment) {
-            $course = $enrollment->course;
-
-            // Lessons
-            $lessonIds = $course->lessons->pluck('id');
-            $completedLessons = LessonCompletion::where('user_id', $user->id)
-                ->whereIn('lesson_id', $lessonIds)
-                ->pluck('lesson_id');
-
-            $lessonsTotal = $lessonIds->count();
-            $lessonsCompleted = $completedLessons->count();
-
-            // Last accessed lesson (best approximation)
-            $lastLessonId = LessonCompletion::where('user_id', $user->id)
-                ->whereIn('lesson_id', $lessonIds)
-                ->orderByDesc('completed_at')
-                ->value('lesson_id');
-
-            // Quizzes
-            $quizIds = Quiz::where('course_id', $course->id)
-                ->orWhereIn('lesson_id', $lessonIds)
-                ->pluck('id');
-
-            $quizzesTotal = $quizIds->count();
-            $quizzesPassed = 0;
-
-            foreach ($quizIds as $quizId) {
-                $quiz = Quiz::find($quizId);
-
-                $bestAttempt = QuizAttempt::where('user_id', $user->id)
-                    ->where('quiz_id', $quizId)
-                    ->orderByDesc('score')
-                    ->first();
-
-                if ($bestAttempt && $bestAttempt->score >= $quiz->passing_score) {
-                    $quizzesPassed++;
-                }
-            }
-
-            // Completion logic (must match ProgressController)
-            $completed =
-                $lessonsCompleted === $lessonsTotal &&
-                $quizzesPassed === $quizzesTotal;
-
-            $totalUnits = $lessonsTotal + $quizzesTotal;
-            $completedUnits = $lessonsCompleted + $quizzesPassed;
-
-            $percentage = $totalUnits > 0
-                ? round(($completedUnits / $totalUnits) * 100, 2)
-                : 0;
-
-            $dashboardCourses[] = [
-                'course_id' => $course->id,
-                'title' => $course->title,
-                'thumbnail' => $course->thumbnail,
-                'percentage' => $percentage,
-                'completed' => $completed,
-                'eligible_for_certificate' => $completed,
-                'lessons' => [
-                    'total' => $lessonsTotal,
-                    'completed' => $lessonsCompleted,
-                ],
-                'quizzes' => [
-                    'total' => $quizzesTotal,
-                    'passed' => $quizzesPassed,
-                ],
-                'last_lesson_id' => $lastLessonId,
-            ];
+        if ($user->role !== 'student') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only students can access this dashboard'
+            ], 403);
         }
 
+        $enrolledCourses = Enrollment::where('user_id', $user->id)->count();
+
+        $completedLessons = LessonProgress::where('user_id', $user->id)
+            ->distinct('lesson_id')
+            ->count('lesson_id');
+
+        // Best attempt per quiz, then average
+        $averageScore = QuizAttempt::where('user_id', $user->id)
+            ->selectRaw('MAX(score) as score')
+            ->groupBy('quiz_id')
+            ->get()
+            ->avg('score');
+
         return response()->json([
-            'student_id' => $user->id,
-            'courses' => $dashboardCourses,
+            'success' => true,
+            'data' => [
+                'enrolled_courses' => $enrolledCourses,
+                'completed_lessons' => $completedLessons,
+                'average_quiz_score' => round($averageScore ?? 0, 2),
+            ]
         ]);
     }
 }
