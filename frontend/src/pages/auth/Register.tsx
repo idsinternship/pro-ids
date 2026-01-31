@@ -1,128 +1,84 @@
-import { useState } from 'react'
-import {
-  Box,
-  Button,
-  Container,
-  TextField,
-  Typography,
-  Alert
-} from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { register as registerApi } from '../../api/auth.api'
-import { useAuth } from '../../auth/useAuth'
-import type { AxiosError } from 'axios'
-
-interface RegisterError {
-  message?: string
-}
+import { useState } from "react";
+import { useAuth } from "../../auth/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function Register() {
-  const navigate = useNavigate()
-  const { login } = useAuth()
+  const { register } = useAuth();
+  const navigate = useNavigate();
 
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"student" | "instructor">("student");
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (password !== confirm) {
-      setError('Passwords do not match')
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const res = await registerApi({
-        name,
-        email,
-        password,
-        password_confirmation: confirm,
-        role: 'student' // 🔥 REQUIRED BY BACKEND
-      })
-
-      const token: string | undefined = res.data?.token
-      if (!token) throw new Error('Token missing')
-
-      login(token)
-      navigate('/student')
-    } catch (err) {
-      const axiosErr = err as AxiosError<RegisterError>
-      setError(
-        axiosErr.response?.data?.message ??
-        'Registration failed'
-      )
-    } finally {
-      setLoading(false)
+      await register(name, email, password, role);
+      navigate("/");
+    } catch {
+      setError("Registration failed");
     }
-  }
+  };
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ mt: 8, p: 4, borderRadius: 2, boxShadow: 3 }}>
-        <Typography variant="h5" mb={3} textAlign="center">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-zinc-900 to-black text-white">
+      <form
+        onSubmit={submit}
+        className="w-full max-w-md p-8 rounded-2xl bg-zinc-900/70 backdrop-blur-xl border border-zinc-800 shadow-2xl"
+      >
+        <h1 className="text-3xl font-bold mb-6 tracking-wide">
+          Create Account
+        </h1>
+
+        {error && (
+          <div className="mb-4 text-sm text-red-400">{error}</div>
+        )}
+
+        <input
+          className="w-full mb-3 p-3 rounded-lg bg-black/50 border border-zinc-700 focus:outline-none"
+          placeholder="Full name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+
+        <input
+          className="w-full mb-3 p-3 rounded-lg bg-black/50 border border-zinc-700"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+
+        <input
+          type="password"
+          className="w-full mb-4 p-3 rounded-lg bg-black/50 border border-zinc-700"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <div className="flex gap-3 mb-6">
+          {(["student", "instructor"] as const).map((r) => (
+            <button
+              type="button"
+              key={r}
+              onClick={() => setRole(r)}
+              className={`flex-1 p-3 rounded-lg border ${
+                role === r
+                  ? "border-cyan-400 bg-cyan-400/10"
+                  : "border-zinc-700"
+              }`}
+            >
+              {r.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
+        <button className="w-full p-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold transition">
           Register
-        </Typography>
-
-        {error && <Alert severity="error">{error}</Alert>}
-
-        <Box component="form" onSubmit={handleSubmit}>
-          <TextField
-            label="Full Name"
-            fullWidth
-            margin="normal"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-
-          <TextField
-            label="Email"
-            type="email"
-            fullWidth
-            margin="normal"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          <TextField
-            label="Password"
-            type="password"
-            fullWidth
-            margin="normal"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-
-          <TextField
-            label="Confirm Password"
-            type="password"
-            fullWidth
-            margin="normal"
-            required
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-          />
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3 }}
-            disabled={loading}
-          >
-            {loading ? 'Creating account…' : 'Register'}
-          </Button>
-        </Box>
-      </Box>
-    </Container>
-  )
+        </button>
+      </form>
+    </div>
+  );
 }

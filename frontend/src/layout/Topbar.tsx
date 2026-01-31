@@ -1,41 +1,34 @@
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  Button,
-} from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../auth/useAuth'
+import { useAuth } from "../auth/AuthContext";
+import { useNavigate } from "react-router-dom";
 
-interface Props {
-  sidebarWidth: number
-}
+export default function Topbar() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-export default function Topbar({ sidebarWidth }: Props) {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
-
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   return (
-    <AppBar
-      position="static"
-      color="default"
-      elevation={1}
-      sx={{ ml: `${sidebarWidth}px` }}
-    >
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Typography variant="h6">
-          {user?.role === 'instructor' ? 'Instructor' : 'Student'} Dashboard
-        </Typography>
+    <div className="h-16 flex items-center justify-between px-6 bg-black/60 backdrop-blur-xl border-b border-zinc-800">
+      <div className="text-xl font-bold tracking-wider text-cyan-400">
+        PRO•IDS
+      </div>
 
-        <Button color="error" onClick={handleLogout}>
-          Logout
-        </Button>
-      </Toolbar>
-    </AppBar>
-  )
+      {user && (
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-zinc-400">
+            {user.name} · {user.role}
+          </span>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition"
+          >
+            Logout
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }

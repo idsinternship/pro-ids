@@ -1,23 +1,22 @@
-export type Role = 'student' | 'instructor'
+export type UserRole = "student" | "instructor";
 
 export interface User {
-  id: number
-  name: string
-  email: string
-  role: Role
-}
-
-export interface JwtPayload {
-  sub: string
-  name: string
-  email: string
-  role: Role
+  id: number;
+  name: string;
+  email: string;
+  role: UserRole;
 }
 
 export interface AuthContextType {
-  user: User | null
-  token: string | null
-  isAuthenticated: boolean
-  login: (token: string) => void
-  logout: () => void
+  user: User | null;
+  token: string | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    role: UserRole
+  ) => Promise<void>;
+  logout: () => Promise<void>;
 }
