@@ -14,3 +14,14 @@ export function getCourses() {
 export function getCourse(id: number) {
   return http.get<Course>(`/courses/${id}`)
 }
+
+export function getInstructorCourses() {
+  return http.get<Course[]>('/instructor/courses')
+}
+
+export function createCourse(data: {
+  title: string
+  description: string
+}) {
+  return http.post('/courses', data)
+}

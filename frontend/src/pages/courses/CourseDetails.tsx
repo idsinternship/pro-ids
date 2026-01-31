@@ -22,11 +22,21 @@ export default function CourseDetails() {
 
   useEffect(() => {
     if (!id) return
-
     getCourse(Number(id))
       .then((res) => setCourse(res.data))
       .finally(() => setLoading(false))
   }, [id])
+
+  const handleEnroll = async () => {
+    if (!id) return
+    setEnrolling(true)
+    try {
+      await enroll(Number(id))
+      setEnrolled(true)
+    } finally {
+      setEnrolling(false)
+    }
+  }
 
   if (loading) return <CircularProgress />
   if (!course) return <Typography>Course not found</Typography>
@@ -49,15 +59,10 @@ export default function CourseDetails() {
         <Box sx={{ mt: 4 }}>
           <Button
             variant="contained"
-            disabled={enrolling || enrolled}
-            onClick={() => {
-              setEnrolling(true)
-              enroll(course.id)
-                .then(() => setEnrolled(true))
-                .finally(() => setEnrolling(false))
-            }}
+            disabled={enrolled || enrolling}
+            onClick={handleEnroll}
           >
-            {enrolled ? 'Enrolled' : 'Enroll in Course'}
+            {enrolled ? 'Enrolled' : enrolling ? 'Enrolling…' : 'Enroll'}
           </Button>
         </Box>
       )}
