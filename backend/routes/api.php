@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\InstructorAnalyticsController;
@@ -53,13 +53,11 @@ Route::middleware('auth:api')->group(function () {
     |--------------------*/
     Route::middleware('instructor')->group(function () {
 
-        // Overall instructor dashboard
         Route::get(
             '/instructor/analytics',
             [InstructorAnalyticsController::class, 'dashboard']
         );
 
-        // Per-course analytics breakdown
         Route::get(
             '/instructor/courses/{course}/analytics',
             [InstructorAnalyticsController::class, 'courseAnalytics']
@@ -98,7 +96,7 @@ Route::middleware('auth:api')->group(function () {
     );
 
     /* --------------------
-    | QUIZZES (AUTO-GRADED + LOCKING)
+    | QUIZZES
     |--------------------*/
     Route::post(
         '/quizzes/{quiz}/submit',
@@ -106,7 +104,7 @@ Route::middleware('auth:api')->group(function () {
     );
 
     /* --------------------
-    | CERTIFICATES (PDF + GATED)
+    | CERTIFICATES
     |--------------------*/
     Route::post(
         '/courses/{course}/certificate',
