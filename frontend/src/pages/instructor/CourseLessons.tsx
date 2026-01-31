@@ -1,86 +1,175 @@
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  List,
-  ListItem,
-  Paper,
-} from '@mui/material'
-import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import {
-  getLessons,
-  createLesson,
-  type Lesson,
-} from '../../api/lessons.api'
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import axios from "axios";
 
-export default function CourseLessons() {
-  const { courseId } = useParams()
-  const [lessons, setLessons] = useState<Lesson[]>([])
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
-  const [order, setOrder] = useState(1)
+interface Lesson {
+  id: number;
+  title: string;
+  order: number;
+  published: boolean;
+}
+
+interface CourseLessonsResponse {
+  course: {
+    id: number;
+    title: string;
+  };
+  lessons: Lesson[];
+}
+
+export default function InstructorCourseLessons() {
+  const { courseId } = useParams();
+  const [data, setData] =
+    useState<CourseLessonsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
 
   useEffect(() => {
-    if (!courseId) return
-    getLessons(Number(courseId)).then(res => setLessons(res.data))
-  }, [courseId])
+    const fetchLessons = async () => {
+      try {
+        const res = await axios.get(
+          `/api/instructor/courses/${courseId}/lessons`
+        );
+        setData(res.data.data);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleCreate = async () => {
-    if (!courseId) return
+    fetchLessons();
+  }, [courseId]);
 
-    await createLesson(Number(courseId), {
-      title,
-      content,
-      order,
-    })
+  const createLesson = async () => {
+    if (!newTitle.trim()) return;
 
-    const res = await getLessons(Number(courseId))
-    setLessons(res.data)
+    setCreating(true);
+    try {
+      const res = await axios.post(
+        `/api/instructor/courses/${courseId}/lessons`,
+        { title: newTitle }
+      );
 
-    setTitle('')
-    setContent('')
-    setOrder(order + 1)
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              lessons: [...prev.lessons, res.data.data],
+            }
+          : prev
+      );
+
+      setNewTitle("");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const togglePublish = async (lesson: Lesson) => {
+    await axios.post(
+      `/api/instructor/lessons/${lesson.id}/toggle`
+    );
+
+    setData((prev) =>
+      prev
+        ? {
+            ...prev,
+            lessons: prev.lessons.map((l) =>
+              l.id === lesson.id
+                ? { ...l, published: !l.published }
+                : l
+            ),
+          }
+        : prev
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center text-zinc-400">
+        Loading lessons…
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="text-red-400">
+        Failed to load lessons.
+      </div>
+    );
   }
 
   return (
-    <Box>
-      <Typography variant="h5" mb={2}>
-        Lessons
-      </Typography>
+    <div className="space-y-10">
+      {/* HEADER */}
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {data.course.title}
+        </h1>
+        <p className="text-zinc-400 mt-1">
+          Manage lesson structure
+        </p>
+      </div>
 
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <TextField
-          label="Lesson title"
-          fullWidth
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          sx={{ mb: 2 }}
+      {/* CREATE */}
+      <div className="flex gap-3">
+        <input
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          placeholder="New lesson title"
+          className="flex-1 px-4 py-3 rounded-xl bg-black/40 border border-[var(--border)] outline-none"
         />
+        <button
+          onClick={createLesson}
+          disabled={creating}
+          className="px-6 py-3 rounded-xl bg-[var(--accent)] text-black font-semibold hover:brightness-110 transition disabled:opacity-50"
+        >
+          {creating ? "Adding…" : "Add Lesson"}
+        </button>
+      </div>
 
-        <TextField
-          label="Content"
-          fullWidth
-          multiline
-          rows={4}
-          value={content}
-          onChange={e => setContent(e.target.value)}
-          sx={{ mb: 2 }}
-        />
+      {/* LIST */}
+      <div className="space-y-3">
+        {data.lessons.map((lesson) => (
+          <div
+            key={lesson.id}
+            className="rounded-2xl p-5 bg-[var(--panel)] border border-[var(--border)] backdrop-blur-xl flex items-center justify-between"
+          >
+            <div>
+              <div className="font-semibold">
+                {lesson.title}
+              </div>
+              <div className="text-sm text-zinc-400">
+                Order #{lesson.order}
+              </div>
+            </div>
 
-        <Button variant="contained" onClick={handleCreate}>
-          Add Lesson
-        </Button>
-      </Paper>
-
-      <List>
-        {lessons.map(lesson => (
-          <ListItem key={lesson.id}>
-            {lesson.order}. {lesson.title}
-          </ListItem>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => togglePublish(lesson)}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition
+                  ${
+                    lesson.published
+                      ? "bg-emerald-400/20 text-emerald-300"
+                      : "bg-zinc-400/20 text-zinc-300"
+                  }
+                `}
+              >
+                {lesson.published
+                  ? "Published"
+                  : "Draft"}
+              </button>
+            </div>
+          </div>
         ))}
-      </List>
-    </Box>
-  )
+
+        {data.lessons.length === 0 && (
+          <div className="rounded-2xl p-10 bg-[var(--panel)] border border-[var(--border)] text-center text-zinc-400">
+            No lessons yet. Add your first lesson.
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

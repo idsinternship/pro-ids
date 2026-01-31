@@ -2,21 +2,18 @@
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Cross-Origin Resource Sharing (CORS) Configuration
-    |--------------------------------------------------------------------------
-    */
-
-    'paths' => ['api/*'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
     'allowed_methods' => ['*'],
 
+    // IMPORTANT: use wildcard for Codespaces
     'allowed_origins' => [
-        'https://laughing-journey-r497r49g7gwrh54g5-5173.app.github.dev',
+        '*',
     ],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '/^https:\/\/.*\.app\.github\.dev$/',
+    ],
 
     'allowed_headers' => ['*'],
 
@@ -25,5 +22,4 @@ return [
     'max_age' => 0,
 
     'supports_credentials' => false,
-
 ];

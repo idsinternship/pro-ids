@@ -3,74 +3,38 @@
 namespace App\Http\Controllers;
 
 use App\Models\Quiz;
-use App\Models\QuizAttempt;
+use App\Models\Course;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class QuizController extends Controller
 {
-    public function submit(Request $request, Quiz $quiz)
+    public function store(Request $request)
     {
-        $user = Auth::user();
-
-        // 1️⃣ Lock if already passed
-        $alreadyPassed = QuizAttempt::where('user_id', $user->id)
-            ->where('quiz_id', $quiz->id)
-            ->where('passed', true)
-            ->exists();
-
-        if ($alreadyPassed) {
-            return response()->json([
-                'error' => 'Quiz already passed'
-            ], 403);
-        }
-
-        // 2️⃣ Max attempts check
-        $attempts = QuizAttempt::where('user_id', $user->id)
-            ->where('quiz_id', $quiz->id)
-            ->count();
-
-        if ($attempts >= $quiz->max_attempts) {
-            return response()->json([
-                'error' => 'Maximum attempts reached'
-            ], 403);
-        }
-
-        // 3️⃣ Validate answers payload
         $data = $request->validate([
-            'answers' => 'required|array',
+            'course_id' => ['required', 'exists:courses,id'],
+            'title' => ['required', 'string'],
+            'passing_score' => ['required', 'integer', 'min:0', 'max:100'],
         ]);
 
-        // 4️⃣ Auto-grade
-        $total = $quiz->questions()->count();
-        $correct = 0;
+        $course = Course::findOrFail($data['course_id']);
 
-        foreach ($quiz->questions as $question) {
-            $answerId = $data['answers'][$question->id] ?? null;
-
-            if ($answerId && $question->answers()
-                ->where('id', $answerId)
-                ->where('is_correct', true)
-                ->exists()) {
-                $correct++;
-            }
+        if ($course->instructor_id !== Auth::id()) {
+            abort(403);
         }
 
-        $score = $total > 0 ? round(($correct / $total) * 100) : 0;
-        $passed = $score >= $quiz->pass_score;
-
-        // 5️⃣ Save attempt
-        $attempt = QuizAttempt::create([
-            'user_id' => $user->id,
-            'quiz_id' => $quiz->id,
-            'score' => $score,
-            'passed' => $passed,
+        $quiz = Quiz::create([
+            'course_id' => $course->id,
+            'title' => $data['title'],
+            'passing_score' => $data['passing_score'],
+            'published' => false,
         ]);
 
-        return response()->json([
-            'score' => $score,
-            'passed' => $passed,
-            'remaining_attempts' => max(0, $quiz->max_attempts - ($attempts + 1)),
-        ]);
+        return response()->json($quiz, 201);
+    }
+
+    public function show($quizId)
+    {
+        return Quiz::with('questions.options')->findOrFail($quizId);
     }
 }

@@ -1,11 +1,7 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
+import { AuthContext } from "./auth.context";
+import type { User, UserRole } from "./auth.types";
 import {
   loginApi,
   registerApi,
@@ -13,50 +9,28 @@ import {
   logoutApi,
 } from "../api/auth.api";
 
-export type UserRole = "student" | "instructor";
-
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: UserRole;
-}
-
-export interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (
-    name: string,
-    email: string,
-    password: string,
-    role: UserRole
-  ) => Promise<void>;
-  logout: () => Promise<void>;
-}
-
-export const AuthContext = createContext<AuthContextType | undefined>(
-  undefined
-);
-
 interface Props {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
-export const AuthProvider: React.FC<Props> = ({ children }) => {
+export function AuthProvider({ children }: Props) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(
     localStorage.getItem("token")
   );
   const [loading, setLoading] = useState(true);
 
-  // Attach token to axios
+  // Calculate isAuthenticated
+  const isAuthenticated = !!token && !!user;
+
+  // Attach token
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common.Authorization = `Bearer ${token}`;
+      localStorage.setItem("token", token);
     } else {
       delete axios.defaults.headers.common.Authorization;
+      localStorage.removeItem("token");
     }
   }, [token]);
 
@@ -75,7 +49,7 @@ export const AuthProvider: React.FC<Props> = ({ children }) => {
     return () => axios.interceptors.response.eject(interceptor);
   }, []);
 
-  // Hydrate user when token changes
+  // Hydrate user
   useEffect(() => {
     const hydrate = async () => {
       if (!token) {
@@ -99,7 +73,6 @@ export const AuthProvider: React.FC<Props> = ({ children }) => {
   const login = async (email: string, password: string) => {
     const res = await loginApi(email, password);
     setToken(res.token);
-    localStorage.setItem("token", res.token);
     setUser(res.user);
   };
 
@@ -111,7 +84,6 @@ export const AuthProvider: React.FC<Props> = ({ children }) => {
   ) => {
     const res = await registerApi(name, email, password, role);
     setToken(res.token);
-    localStorage.setItem("token", res.token);
     setUser(res.user);
   };
 
@@ -132,9 +104,17 @@ export const AuthProvider: React.FC<Props> = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, login, register, logout }}
+      value={{ 
+        user, 
+        token, 
+        loading, 
+        isAuthenticated,
+        login, 
+        register, 
+        logout 
+      }}
     >
       {children}
     </AuthContext.Provider>
   );
-};
+}

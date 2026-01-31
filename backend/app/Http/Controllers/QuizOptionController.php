@@ -2,24 +2,32 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\QuizQuestion;
 use App\Models\QuizOption;
+use App\Models\QuizQuestion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class QuizOptionController extends Controller
 {
-    public function store(Request $request)
+    public function store(Request $request, $questionId)
     {
+        $question = QuizQuestion::with('quiz.course')->findOrFail($questionId);
+        $user = Auth::user();
+
+        if ($question->quiz->course->instructor_id !== $user->id) {
+            abort(403);
+        }
+
         $data = $request->validate([
-            'question_id' => 'required|exists:quiz_questions,id',
-            'answer_text' => 'required|string',
-            'is_correct' => 'required|boolean',
+            'text' => ['required', 'string'],
+            'is_correct' => ['required', 'boolean'],
         ]);
 
-        $question = QuizQuestion::findOrFail($data['question_id']);
-        abort_unless($question->quiz->course->instructor_id === auth()->id(), 403);
-
-        $option = QuizOption::create($data);
+        $option = QuizOption::create([
+            'quiz_question_id' => $question->id,
+            'text' => $data['text'],
+            'is_correct' => $data['is_correct'],
+        ]);
 
         return response()->json($option, 201);
     }

@@ -1,0 +1,26 @@
+:root {
+  --bg: #050608;
+  --panel: rgba(15, 17, 21, 0.8);
+  --border: rgba(255, 255, 255, 0.08);
+
+  --text-main: #f5f7fa;
+  --text-muted: #9aa4b2;
+
+  --accent: #22d3ee; /* cyan-400 */
+  --accent-glow: rgba(34, 211, 238, 0.35);
+
+  --danger: #ef4444;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text-main);
+  font-family: Inter, system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}

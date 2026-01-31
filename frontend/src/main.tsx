@@ -1,19 +1,24 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import { ThemeProvider } from '@mui/material/styles'
-import App from './App'
-import { AuthProvider } from './auth/AuthProvider'
-import { theme } from './theme/theme'
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+
+import App from "./App";
+// Change this import to use AuthContext.tsx instead of AuthProvider.tsx
+import { AuthProvider } from "./auth/AuthContext";
+
+/* ===== GLOBAL STYLES ===== */
+import "./index.css";
+import "./theme/theme.css";
+
+ReactDOM.createRoot(
+  document.getElementById("root") as HTMLElement
+).render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
+    <BrowserRouter>
       <AuthProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <App />
       </AuthProvider>
-    </ThemeProvider>
+    </BrowserRouter>
   </React.StrictMode>
-)
+);

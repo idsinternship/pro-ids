@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API = "/api";
+const API = "https://stunning-space-waddle-wrp4wxpqq5rc54r7-8000.app.github.dev/api";
 
 export const loginApi = async (email: string, password: string) => {
   const { data } = await axios.post(`${API}/login`, { email, password });

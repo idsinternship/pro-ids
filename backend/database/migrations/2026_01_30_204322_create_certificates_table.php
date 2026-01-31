@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::create('certificates', function (Blueprint $table) {
             $table->id();
-            $table->uuid('verification_code')->unique();
+            $table->string('verification_code')->unique();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('course_id')->constrained()->cascadeOnDelete();
             $table->timestamp('issued_at')->useCurrent();

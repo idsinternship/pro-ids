@@ -9,8 +9,10 @@ return new class extends Migration {
     {
         Schema::create('quizzes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('lesson_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('course_id')->constrained()->cascadeOnDelete();
             $table->string('title');
+            $table->boolean('published')->default(false);
+            $table->unsignedInteger('passing_score')->default(60);
             $table->timestamps();
         });
     }

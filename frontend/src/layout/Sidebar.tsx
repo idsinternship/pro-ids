@@ -1,62 +1,59 @@
-import {
-  Drawer,
-  List,
-  ListItemButton,
-  ListItemText,
-  Toolbar,
-} from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../auth/useAuth'
+import { NavLink } from "react-router-dom";
+import { useAuth } from "../auth/useAuth";
 
-interface Props {
-  width: number
+interface NavItem {
+  label: string;
+  path: string;
 }
 
-export default function Sidebar({ width }: Props) {
-  const navigate = useNavigate()
-  const { user } = useAuth()
+export default function Sidebar() {
+  const { user } = useAuth();
+
+  if (!user) return null;
+
+  const studentNav: NavItem[] = [
+    { label: "Dashboard", path: "/student" },
+    { label: "My Courses", path: "/student/courses" },
+  ];
+
+  const instructorNav: NavItem[] = [
+    { label: "Dashboard", path: "/instructor" },
+    { label: "Create Course", path: "/instructor/courses/new" },
+    { label: "My Courses", path: "/instructor/courses" },
+  ];
+
+  const navItems = user.role === "student" ? studentNav : instructorNav;
 
   return (
-    <Drawer
-      variant="permanent"
-      sx={{
-        width,
-        flexShrink: 0,
-        [`& .MuiDrawer-paper`]: {
-          width,
-          boxSizing: 'border-box',
-        },
-      }}
-    >
-      <Toolbar />
+    <aside className="w-64 h-screen bg-black/70 backdrop-blur-xl border-r border-zinc-800 flex flex-col">
+      <div className="p-6 text-2xl font-extrabold tracking-widest text-cyan-400">
+        PRO•IDS
+      </div>
 
-      <List>
-        <ListItemButton onClick={() => navigate('/')}>
-          <ListItemText primary="Dashboard" />
-        </ListItemButton>
-
-        {user?.role === 'student' && (
-          <>
-            <ListItemButton onClick={() => navigate('/student')}>
-              <ListItemText primary="Student Home" />
-            </ListItemButton>
-
-            <ListItemButton
-              onClick={() => navigate('/student/courses')}
-            >
-              <ListItemText primary="My Courses" />
-            </ListItemButton>
-          </>
-        )}
-
-        {user?.role === 'instructor' && (
-          <ListItemButton
-            onClick={() => navigate('/instructor')}
+      <nav className="flex-1 px-4 space-y-1">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              `
+              block px-4 py-3 rounded-xl text-sm font-medium transition
+              ${
+                isActive
+                  ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                  : "text-zinc-400 hover:bg-white/5 hover:text-white"
+              }
+            `
+            }
           >
-            <ListItemText primary="Instructor Panel" />
-          </ListItemButton>
-        )}
-      </List>
-    </Drawer>
-  )
+            {item.label}
+          </NavLink>
+        ))}
+      </nav>
+
+      <div className="p-4 text-xs text-zinc-600 border-t border-zinc-800">
+        Logged in as <span className="text-zinc-400">{user.role}</span>
+      </div>
+    </aside>
+  );
 }
