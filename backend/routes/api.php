@@ -8,6 +8,7 @@ use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\InstructorAnalyticsController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\LessonProgressController;
+use App\Http\Controllers\QuizController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,12 +49,22 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/courses/{course}/publish', [CourseController::class, 'publish']);
 
     /* --------------------
-    | INSTRUCTOR – ANALYTICS
+    | INSTRUCTOR – ANALYTICS (INSTRUCTOR ONLY)
     |--------------------*/
-    Route::get(
-        '/instructor/analytics',
-        [InstructorAnalyticsController::class, 'dashboard']
-    );
+    Route::middleware('instructor')->group(function () {
+
+        // Overall instructor dashboard
+        Route::get(
+            '/instructor/analytics',
+            [InstructorAnalyticsController::class, 'dashboard']
+        );
+
+        // Per-course analytics breakdown
+        Route::get(
+            '/instructor/courses/{course}/analytics',
+            [InstructorAnalyticsController::class, 'courseAnalytics']
+        );
+    });
 
     /* --------------------
     | ENROLLMENTS
@@ -87,7 +98,15 @@ Route::middleware('auth:api')->group(function () {
     );
 
     /* --------------------
-    | CERTIFICATES (ISSUE)
+    | QUIZZES (AUTO-GRADED + LOCKING)
+    |--------------------*/
+    Route::post(
+        '/quizzes/{quiz}/submit',
+        [QuizController::class, 'submit']
+    );
+
+    /* --------------------
+    | CERTIFICATES (PDF + GATED)
     |--------------------*/
     Route::post(
         '/courses/{course}/certificate',

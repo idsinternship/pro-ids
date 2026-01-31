@@ -6,10 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Quiz extends Model
 {
-    protected $fillable = ['lesson_id', 'title'];
+    protected $fillable = [
+        'course_id',
+        'title',
+        'max_attempts',
+        'pass_score',
+    ];
 
-    public function questions()
+    public function attempts()
     {
-        return $this->hasMany(QuizQuestion::class);
+        return $this->hasMany(QuizAttempt::class);
     }
 }

@@ -6,5 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class QuizAttempt extends Model
 {
-    protected $fillable = ['quiz_id', 'user_id', 'score', 'total'];
+    protected $fillable = [
+        'user_id',
+        'quiz_id',
+        'score',
+        'passed',
+    ];
+
+    public function quiz()
+    {
+        return $this->belongsTo(Quiz::class);
+    }
 }
