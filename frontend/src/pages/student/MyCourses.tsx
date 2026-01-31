@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useAuth } from "../../auth/useAuth";
 
 interface Course {
   course_id: number;
@@ -9,21 +10,37 @@ interface Course {
 }
 
 export default function MyCourses() {
+  
+  const { token } = useAuth();
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await axios.get("/api/my-learning");
-        setCourses(res.data.data);
+        const res = await axios.get(
+          "https://stunning-space-waddle-wrp4wxpqq5rc54r7-8000.app.github.dev/api/my-learning",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        // ✅ SAFETY: always set an array
+        const list = Array.isArray(res.data?.data)
+          ? res.data.data
+          : [];
+
+        setCourses(list);
       } finally {
         setLoading(false);
       }
     };
 
     fetchCourses();
-  }, []);
+  }, [token]);
 
   if (loading) {
     return (

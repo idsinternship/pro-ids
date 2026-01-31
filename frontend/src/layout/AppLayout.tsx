@@ -1,22 +1,17 @@
-import { Box } from '@mui/material'
-import { Outlet } from 'react-router-dom'
-import Sidebar from './Sidebar'
-import Topbar from './Topbar'
-
-const SIDEBAR_WIDTH = 240
+import { Outlet } from "react-router-dom";
+import Sidebar from "./Sidebar";
+import Topbar from "./Topbar";
 
 export default function AppLayout() {
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar width={SIDEBAR_WIDTH} />
-
-      <Box sx={{ flexGrow: 1 }}>
-        <Topbar sidebarWidth={SIDEBAR_WIDTH} />
-
-        <Box sx={{ p: 3 }}>
+    <div className="min-h-screen flex bg-black text-white">
+      <Sidebar />
+      <div className="flex-1 flex flex-col">
+        <Topbar />
+        <main className="flex-1 p-6">
           <Outlet />
-        </Box>
-      </Box>
-    </Box>
-  )
+        </main>
+      </div>
+    </div>
+  );
 }

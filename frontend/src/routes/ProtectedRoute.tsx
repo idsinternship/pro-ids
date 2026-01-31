@@ -1,11 +1,11 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 
-interface Props {
+interface ProtectedRouteProps {
   allow?: Array<"student" | "instructor">;
 }
 
-export default function ProtectedRoute({ allow }: Props) {
+export default function ProtectedRoute({ allow }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
 
   if (loading) {

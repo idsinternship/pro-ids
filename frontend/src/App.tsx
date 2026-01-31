@@ -19,6 +19,7 @@ import CreateCourse from "./pages/instructor/CreateCourse";
 import InstructorCourseLessons from "./pages/instructor/CourseLessons";
 import CourseQuizBuilder from "./pages/instructor/CourseQuizBuilder";
 import CourseAnalytics from "./pages/instructor/CourseAnalytics";
+import InstructorCourses from "./pages/instructor/MyCourses"; // Add this import
 
 /* ================= PUBLIC COURSES ================= */
 import CourseCatalog from "./pages/courses/CourseCatalog";
@@ -62,6 +63,7 @@ export default function App() {
           {/* -------- INSTRUCTOR ONLY -------- */}
           <Route element={<ProtectedRoute allow={["instructor"]} />}>
             <Route path="/instructor" element={<InstructorDashboard />} />
+            <Route path="/instructor/courses" element={<InstructorCourses />} />
 
             <Route
               path="/instructor/courses/new"

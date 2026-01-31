@@ -20,12 +20,17 @@ export function AuthProvider({ children }: Props) {
   );
   const [loading, setLoading] = useState(true);
 
+  // Calculate isAuthenticated
+  const isAuthenticated = !!token && !!user;
+
   // Attach token
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common.Authorization = `Bearer ${token}`;
+      localStorage.setItem("token", token);
     } else {
       delete axios.defaults.headers.common.Authorization;
+      localStorage.removeItem("token");
     }
   }, [token]);
 
@@ -68,7 +73,6 @@ export function AuthProvider({ children }: Props) {
   const login = async (email: string, password: string) => {
     const res = await loginApi(email, password);
     setToken(res.token);
-    localStorage.setItem("token", res.token);
     setUser(res.user);
   };
 
@@ -80,7 +84,6 @@ export function AuthProvider({ children }: Props) {
   ) => {
     const res = await registerApi(name, email, password, role);
     setToken(res.token);
-    localStorage.setItem("token", res.token);
     setUser(res.user);
   };
 
@@ -101,7 +104,15 @@ export function AuthProvider({ children }: Props) {
 
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, login, register, logout }}
+      value={{ 
+        user, 
+        token, 
+        loading, 
+        isAuthenticated,
+        login, 
+        register, 
+        logout 
+      }}
     >
       {children}
     </AuthContext.Provider>

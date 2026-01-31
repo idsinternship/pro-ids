@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
 interface DashboardData {
   enrolled_courses: number;
@@ -7,15 +7,36 @@ interface DashboardData {
   average_quiz_score: number;
 }
 
+interface ApiErrorResponse {
+  message?: string;
+}
+
 export default function StudentDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
         const res = await axios.get("/api/student/dashboard");
+        console.log("Dashboard API response:", res.data); // Debug log
         setData(res.data.data);
+      } catch (err: unknown) {
+        console.error("Failed to load dashboard:", err); // Debug log
+        
+        if (axios.isAxiosError(err)) {
+          const axiosErr = err as AxiosError<ApiErrorResponse>;
+          setError(
+            axiosErr.response?.data?.message || 
+            axiosErr.message || 
+            "Failed to load dashboard"
+          );
+        } else if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Failed to load dashboard");
+        }
       } finally {
         setLoading(false);
       }
@@ -32,10 +53,29 @@ export default function StudentDashboard() {
     );
   }
 
-  if (!data) {
+  if (error || !data) {
     return (
-      <div className="text-red-400">
-        Failed to load dashboard.
+      <div className="space-y-10">
+        {/* ===== HEADER ===== */}
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Student Dashboard
+          </h1>
+          <p className="text-zinc-400 mt-1">
+            Your learning progress at a glance
+          </p>
+        </div>
+
+        <div className="text-red-400 p-6 bg-red-400/10 border border-red-400/30 rounded-xl">
+          <div className="font-semibold">Error loading dashboard</div>
+          <div className="text-sm mt-1">{error || "Unknown error"}</div>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-3 px-4 py-2 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }

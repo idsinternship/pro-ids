@@ -12,14 +12,14 @@ export default function Sidebar() {
   if (!user) return null;
 
   const studentNav: NavItem[] = [
-    { label: "Dashboard", path: "/" },
-    { label: "My Courses", path: "/my-learning" },
+    { label: "Dashboard", path: "/student" },
+    { label: "My Courses", path: "/student/courses" },
   ];
 
   const instructorNav: NavItem[] = [
-    { label: "Dashboard", path: "/" },
-    { label: "Create Course", path: "/instructor/courses/create" },
-    { label: "Analytics", path: "/instructor/analytics" },
+    { label: "Dashboard", path: "/instructor" },
+    { label: "Create Course", path: "/instructor/courses/new" },
+    { label: "My Courses", path: "/instructor/courses" },
   ];
 
   const navItems = user.role === "student" ? studentNav : instructorNav;
